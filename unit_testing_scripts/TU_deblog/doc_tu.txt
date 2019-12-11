@@ -1,0 +1,28 @@
+"""data_purge"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas nominal 1 :  
+	Pré-requis :
+	NA
+	
+	Action :
+	Appeler la procédure common.deblog
+	
+	Résultat attendu :
+	Une ligne comme spécifiée a été insérée dans la table common.debugger
+	
+	Script pré-requis :	
+	NA
+	
+	Script action :
+	CALL common.deblog
+	(
+		'test'
+		, 'test_query'
+		, 'resultat'
+	);
+
+"""""""""""""""""""""""""

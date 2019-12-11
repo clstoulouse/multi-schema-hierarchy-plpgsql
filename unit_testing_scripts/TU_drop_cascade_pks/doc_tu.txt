@@ -1,0 +1,126 @@
+"""drop_cascade_pks"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas nominal 1 : Supprimer une clé primaire séquencée master only
+	Pré-requis :
+	Créer une table test (test_id int primary key, value varchar (50));
+	
+	Action :
+	Supprimer la clé primaire.
+	
+	Résultat attendu :
+	La clé primaire est supprimée.
+	La séquence est supprimée.
+	
+	Script pré-requis :	
+	CREATE TABLE master.test (test_id int primary key, value varchar (50));
+	
+	Script action :
+	ALTER TABLE master.test
+	DROP CONSTRAINT pk_00001 CASCADE;
+
+Cas nominal 2 :	Supprimer une clé primaire séquencée avec deux clients
+	Pré-requis :
+	Cas nominal 1 : ok
+	Créer les nouveaux clients client_1 et client_2
+	Créer une table test_2 (test_id int primary key, value varchar (50));
+	Mettre des données selon la description suivante :
+	client_1			client_2
+	test_id	value		test_id	value
+	1		'test'		5		'test'
+	2		'test'		6		'test'
+	3		'test'		7		'test'
+	4		'test'			
+	
+	Action :
+	Supprimer la clé primaire sur master.test_2.
+	
+	Résultat attendu :
+	La clé primaire est supprimée sur master.
+	La clé primaire est supprimée sur client_1.	
+	La clé primaire est supprimée sur client_2.
+	La séquence est supprimée
+	
+	Script pré-requis :	
+	CALL common.create_new_client('client_1');
+	CALL common.create_new_client('client_2');
+	CREATE TABLE master.test_2 (test_id int primary key, value varchar (50));
+	INSERT INTO client_1.test_2 (value) VALUES ('test'), ('test'), ('test'), ('test');
+	INSERT INTO client_2.test_2 (value) VALUES ('test'), ('test'), ('test');
+	
+	Script action :
+	ALTER TABLE master.test_2
+	DROP CONSTRAINT pk_00002 CASCADE;
+	
+	
+Cas nominal 3 : Supprimer une clé primaire composée
+	Pré-requis :
+	Cas nominal 2 : ok
+	Créer une table test_3 (test_id int, test_id_2 varchar(5), value varchar (50)); 
+	Créer une clé primaire composée sur master.test pourvu de test_id et test_id_2.
+	Mettre des données selon la description suivante :
+	client_1					client_2
+	test_id	test_id_2	value	test_id	test_id_2	value
+	1		'A'			'test'	5		'A'			'test'
+	2		'A'			'test'	6		'B'			'test'
+	3		'A'			'test'	7		'B'			'test'
+	4		'B'			'test'		
+	
+	Action :
+	Supprimer la clé primaire sur master.test_3.
+	
+	Résultat attendu :
+	La clé primaire est supprimée sur master.
+	La clé primaire est supprimée sur client_1.	
+	La clé primaire est supprimée sur client_2.
+	Aucune séquence n'est présente sur le schéma 'master'
+		
+	Script pré-requis :	
+	CREATE TABLE master.test_3 (test_id int, test_id_2 varchar(5), value varchar (50));
+	ALTER TABLE master.test_3 
+	ADD CONSTRAINT pk_ttt PRIMARY KEY (test_id, test_id_2);
+	INSERT INTO client_1.test_3 (test_id, test_id_2, value) VALUES (1, 'A', 'test'), (2, 'A', 'test'), (3, 'A', 'test'), (4, 'B', 'test');
+	INSERT INTO client_2.test_3 (test_id, test_id_2, value) VALUES (5, 'A', 'test'), (6, 'B', 'test'), (7, 'B', 'test');
+	
+	Script action :
+	ALTER TABLE master.test_3
+	DROP CONSTRAINT pk_00003 CASCADE;
+	
+	CALL unit_tests.deblog('drop_cascade_pks_nom_3', cast(1 as bit));	
+	
+
+Cas nominal 4 : Supprimer une clé primaire non int et non-composée
+	Pré-requis :
+	Cas nominal 3 : ok
+	Créer une table test_4 (test_id varchar(5) primary key, value varchar (50)); 
+	Mettre des données selon la description suivante :
+	client_1			client_2
+	test_id	value		test_id	value
+	'a'		'test'		'e'		'test'
+	'b'		'test'		'f'		'test'
+	'c'		'test'		'g'		'test'
+	'd'		'test'		
+	
+	Action :
+	Supprimer la clé primaire sur master.test_4.
+	
+	Résultat attendu :
+	La clé primaire est supprimée sur master.
+	La clé primaire est supprimée sur client_1.	
+	La clé primaire est supprimée sur client_2.
+	Aucune séquence n'est présente sur 'master'
+	
+	Script pré-requis :	
+	CREATE TABLE master.test_4 (test_id varchar(5) primary key, value varchar (50));
+	INSERT INTO client_1.test_4 VALUES ('a', 'test'), ('b', 'test'), ('c', 'test'), ('d', 'test');
+	INSERT INTO client_2.test_4 VALUES ('e', 'test'), ('f', 'test'), ('g', 'test');
+	
+	Script action :
+	ALTER TABLE master.test_4
+	DROP CONSTRAINT pk_00004 CASCADE;
+	
+
+"""""""""""""""""""""""""

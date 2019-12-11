@@ -1,0 +1,52 @@
+"""build_if_has_to_tables"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas nominal 1 : Création d'une table dans le schéma master
+	Pré-requis :
+	Créer un client 'client_1'
+	
+	Action :
+	Créer une table 'test' {test_id varchar(5) primary key, value varchar (50)}
+	
+	Résultat attendu :	
+	Une table a été créée dans le schéma 'client_1'
+	Le rôle writer_client_1 a été créé.
+	Le rôle reader_client_1 a été créé.
+	Le rôle reader_all dispose des droits SELECT sur la table client_1.test
+	Le rôle writer_all dispose des droits SELECT sur la table client_1.test
+	Le rôle writer_all dispose des droits DELETE sur la table client_1.test
+	Le rôle reader_client_1 dispose des droits SELECT sur la table client_1.test
+	Le rôle writer_client_1 dispose des droits SELECT sur la table client_1.test
+	Le rôle writer_client_1 dispose des droits DELETE sur la table client_1.test
+	Le rôle writer_all dispose des droits UPDATE et INSERT sur toutes les colonnes de la table client_1.test
+	Le rôle writer_client_1 dispose des droits UPDATE et INSERT sur toutes les colonnes de la table client_1.test
+	
+	Script pré-requis :	
+	CALL common.create_new_client('client_1', 'client_1');
+	
+	Script action :
+	CREATE TABLE master.test (test_id int primary key, value varchar(50));
+		
+	
+Cas nominal 2 : Si la clé primaire est un int, alors les droits insert et update ne doivent pas être donnés au writers.
+	Pré-requis :
+	Cas nominal 1 : OK
+	
+	Action :
+	Créer une table test_2 {test_id int primary key, value varchar(50)}
+	
+	Résultat attendu :	
+	Le rôle writer_client_1 n'a pas les droits UPDATE et INSERT sur la colonne client_1.test.test_id
+	Le rôle writer_all n'a pas les droits UPDATE et INSERT sur la colonne client_1.test.test_id
+	
+	Script pré-requis :	
+	NA
+	
+	Script action :
+	CREATE TABLE master.test_2 (test_id int primary key, value varchar(50));
+	
+	
+"""""""""""""""""""""""""

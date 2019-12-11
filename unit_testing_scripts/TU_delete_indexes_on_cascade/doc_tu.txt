@@ -1,0 +1,69 @@
+"""delete_indexes_on_cascade"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas nominal 1 : Drop un index sur le master
+	Pré-requis :
+	Créer une table test (test_id int primary key, value (varchar50))
+	Créer un index sur la colonne master.test.value
+	
+	Action :
+	Supprimer l'index master.test.value
+	
+	Résultat attendu :
+	L'index est bien supprimé dans la table master.test
+	
+	Script pré-requis :	
+	CREATE TABLE master.test (test_id int primary key, value (varchar50));
+	CREATE INDEX idx_test_value ON master.test USING BTREE (value);
+	
+	Script action :
+	DROP INDEX master.idx_00001 CASCADE;
+	
+	
+Cas nominal 2 : Drop un index sur un client depuis le master
+	Pré-requis :
+	Cas nominal 1 : OK
+	Créer un nouveau client : 'client_1'
+	Créer un index sur la colonne master.test.value	
+	
+	Action :
+	Supprimer l'index master.test.value
+	
+	Résultat attendu :
+	L'index est bien supprimé dans la table master.test
+	L'index est bien supprimé dans la table client_1.test
+	
+	Script pré-requis :	
+	CALL common.create_new_client('client_1');
+	CREATE INDEX idx_test_value ON master.test USING BTREE (value);
+	
+	Script action :
+	DROP INDEX master.idx_00002 CASCADE;
+	
+	
+Cas nominal 3 : Drop un index sur deux clients depuis le master
+	Pré-requis :
+	Cas nominal 2 : OK
+	Créer un nouveau client : 'client_2'
+	Créer un index sur la colonne master.test.value	
+	
+	Action :
+	Supprimer l'index master.test.value
+	
+	Résultat attendu :
+	L'index est bien supprimé dans la table master.test
+	L'index est bien supprimé dans la table client_1.test
+	L'index est bien supprimé dans la table client_2.test
+	
+	Script pré-requis :	
+	CALL common.create_new_client('client_2');
+	CREATE INDEX idx_test_value ON master.test USING BTREE (value);
+	
+	Script action :
+	DROP INDEX master.idx_00003 CASCADE;
+	
+
+"""""""""""""""""""""""""

@@ -1,0 +1,41 @@
+"""check_data_purge_retentioninterval"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas nominal 1 : La fonction doit répondre vrai
+	Pré-requis :
+	NA
+	
+	Action :
+	Lancer la fonction avec pour paramètre '1 month'
+	
+	Résultat attendu :	
+	Le résultat est true.
+	
+	Script pré-requis :	
+	-- 
+	
+	Script action :
+	SELECT 1 FROM common.check_data_purge_retentioninterval('1 month') WHERE check_data_purge_retentioninterval = true;
+
+
+Cas erreur 1 : La fonction doit renvoyer une erreur
+	Pré-requis :
+	Cas nominal 1 : OK
+	
+	Action :
+	Lancer la fonction avec pour paramètre '01/02/2019'
+	
+	Résultat attendu :	
+	Erreur : 'Le champs n'est pas valide.'
+	
+	Script pré-requis :	
+	NA
+	
+	Script action :
+	SELECT 1 FROM common.check_data_purge_retentioninterval('01/02/2019') WHERE check_data_purge_retentioninterval = true;
+	
+	
+"""""""""""""""""""""""""

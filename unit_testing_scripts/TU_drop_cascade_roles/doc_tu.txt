@@ -1,0 +1,30 @@
+"""drop_cascade_roles"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas nominal 1 : Transformer une colonne int en pk
+	Pré-requis :
+	Créer deux nouveau client : client_1 et client_2
+	Créer une table test (test_id int, value varchar(50));
+		
+	Action :
+	Ajouter une contrainte de clé primaire sur la colonne master.test.test_id
+	
+	Résultat attendu :
+	Il existe une séquence sur la colonne master.test.test_id
+	Les seuls droits accessibles pour le writer et le reader de client_1 sont ceux de consultation sur client_1.test.test_id
+	Les seuls droits accessibles pour le writer et le reader de client_2 sont ceux de consultation sur client_2.test.test_id	
+	
+	Script pré-requis :	
+	CALL common.create_new_client('client_1');
+	CALL common.create_new_client('client_2');
+	CREATE TABLE master.test (test_id int, value varchar(50));
+	
+	Script action :
+	ALTER TABLE master.test
+	ADD CONSTRAINT pk_ttt PRIMARY KEY (test_id);
+	
+
+"""""""""""""""""""""""""

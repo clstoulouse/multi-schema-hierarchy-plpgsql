@@ -1,0 +1,160 @@
+"""build_if_has_to_sqs"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas nominal 1 : Une colonne d'une table du schéma master est primary key et type int (valable pour smallint et bigint)
+	Pré-requis :
+	Le système possède deux clients 'client_1' et 'client_2'
+	
+	Action :
+	Création d'une table 'test' {test_id int primary key, value varchar(50)}
+	
+	Résultat attendu :
+	Une séquence a été créée sur le schéma master et porte le nom 'sq_pk_test'.
+	La colonne client_1.test.test_id suit la séquence 'sq_pk_test'.
+	La colonne client_2.test.test_id suit la séquence 'sq_pk_test'.
+	
+	Script pré-requis :
+	CALL common.create_new_client('client_1', 'client_1');
+	CALL common.create_new_client('client_2', 'client_2');
+	
+	Script action :
+	CREATE TABLE master.test (test_id int primary key, value varchar(50));
+	
+	
+Cas nominal 2 : Création d'une clé primaire int après création de la table et de la colonne.
+	Pré-requis :
+	Cas nominal 1 : ok
+	Création de la table 'test_2' {test_2_id int, value varchar (50)}
+	
+	Action :
+	Création de la clé primaire sur la colonne master.test_2.test_id
+	
+	Résultat attendu :
+	Une séquence 'sq_pk_test_2' a été crée sur master.
+	La colonne client_1.test_2.test_2_id suit la séquence 'sq_test_2_id'.
+	La colonne client_2.test_2.test_2_id suit la séquence 'sq_test_2_id'.
+	
+	Script pré-requis :
+	CREATE TABLE master.test_2 (test_2_id int, value varchar(50));
+	
+	Script action :
+	ALTER TABLE master.test_2
+	ADD CONSTRAINT pk_ttt PRIMARY KEY (test_2_id);
+	
+
+Cas nominal 3 : Les mêmes tables de différents clients suivent bien la même séquence.
+	Pré-requis :
+	Cas nominal 2 : ok
+	
+	Action :
+	Insérer une donnée dans client_1.test
+	Insérer une donnée dans client_2.test
+	Insérer une donnée dans client_2.test
+	Insérer une donnée dans client_1.test
+	
+	Résultat attendu :
+	client_1.test
+	test_id		value
+	1			'test'
+	4			'test'
+	
+	client_2.test
+	test_id		value
+	2			'test'
+	3			'test'
+	
+	Script pré-requis : 
+	NA
+	
+	Script action :
+	INSERT INTO client_1.test (value) VALUES ('test');
+	INSERT INTO client_2.test (value) VALUES ('test'), ('test');
+	INSERT INTO client_1.test (value) VALUES ('test');
+	
+
+Cas nominal 4 : Suppression d'une colonne portant une clé primaire séquencée
+	Pré-requis :
+	Cas nominal 3 : OK
+	
+	Action :
+	Supprimer la colonne master.test_2.test_2_id
+	
+	Résultat attendu :
+	La colonne est supprimée sur les tables :
+	- master.test_2
+	- client_1.test_2
+	- client_2.test_2
+	La séquence 'sq_pk_test_2' est supprimée.
+	
+	Script pré-requis :
+	NA
+	
+	Script action :
+	ALTER TABLE master.test_2
+	DROP COLUMN test_2_id CASCADE;
+	
+
+Cas nominal 5 : Suppression d'une table portant une clé primaire séquencée
+	Pré-requis :
+	Cas nominal 4 : OK
+	Ajouter une colonne clé primaire int à la table master.test_2 portant le nom test_2_id
+	
+	Action :
+	Supprimer la table master.test_2
+	
+	Résultat attendu :
+	La table est supprimée dans les schémas master, client_1 et client_2
+	La séquence 'sq_pk_test_2' est supprimée
+	
+	Script pré-requis :
+	ALTER TABLE master.test_2
+	ADD COLUMN test_2_id int PRIMARY KEY;
+	
+	Script action :
+	DROP TABLE master.test_2 CASCADE;
+	
+
+Cas nominal 6 : Suppression d'une contrainte de clé primaire
+	Pré-requis :
+	Cas nominal 5 : OK
+		
+	Action :
+	Supprimer la contrainte de clé primaire pk_test sur master.test
+	
+	Résultat attendu :
+	La clé primaire a été supprimée sur les tables :
+	- master.test
+	- client_1.test
+	- client_2.test
+	La séquence sq_pk_test a été supprimée
+	
+	Script pré-requis :
+	NA
+	
+	Script action :
+	ALTER TABLE master.test
+	DROP CONSTRAINT pk_test CASCADE;
+	
+
+Cas nominal 7 : Vérifier que les rôles writer ont les accès aux séquences
+	Pré-requis :
+	Cas nominal 6 : OK
+		
+	Action :
+	Créer une nouvelle table pourvue d'une clé primaire int 'test_3' {test_id int primary key, value varchar(50)}
+	
+	Résultat attendu :
+	La nouvelle table est créée dans client_1 et client_2
+	Les rôles writer_all, writer_client_1 et writer_client_2 ont les droits USAGE sur la séquence 'sq_pk_test_3'
+	
+	Script pré-requis :
+	NA
+	
+	Script action :
+	CREATE TABLE master.test_3 (test_id int primary key, value varchar(50));
+	
+	
+"""""""""""""""""""""""""

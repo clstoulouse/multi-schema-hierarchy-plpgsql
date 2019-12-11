@@ -1,0 +1,41 @@
+"""check_table_presence"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas nominal 1 : La fonction doit répondre vrai
+	Pré-requis :
+	Une table test {test_id int primary key, value varchar (50)} doit être présente
+	
+	Action :
+	Lancer la fonction avec pour paramètre 'test'
+	
+	Résultat attendu :	
+	Le résultat est true.
+	
+	Script pré-requis :	
+	CREATE TABLE master.test (test_id int PRIMARY KEY, value varchar(50));
+	
+	Script action :
+	SELECT * FROM common.check_table_presence('test');
+
+
+Cas erreur 1 : La fonction doit renvoyer une erreur
+	Pré-requis :
+	Cas nominal 1 : OK
+	
+	Action :
+	Lancer la fonction avec pour paramètre 'xxx'
+	
+	Résultat attendu :	
+	Erreur : 'La table précisée n'existe pas.'
+	
+	Script pré-requis :	
+	CREATE TABLE master.test (test_id int PRIMARY KEY, value varchar(50));
+	
+	Script action :
+	SELECT * FROM common.check_table_presence('xxx');
+	
+	
+"""""""""""""""""""""""""

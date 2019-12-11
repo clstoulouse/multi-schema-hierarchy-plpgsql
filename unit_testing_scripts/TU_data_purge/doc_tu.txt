@@ -1,0 +1,170 @@
+"""data_purge"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas d'erreur 1 :  La table de configuration de purge est créée si non présente
+	Pré-requis :
+	NA
+	
+	Action :
+	Appeler la fonction de purge
+	
+	Résultat attendu :
+	La table common.purge_tool_conf est créée.
+	Erreur : 'Aucune table n'est configurée comme purgeable dans la table de purge.'
+	
+	Script pré-requis :	
+	NA
+	
+	Script action :
+	CALL common.data_purge();
+	
+
+Cas erreur 2 : Le nom de table précisé dans purge_tool_conf n'existe pas
+	Pré-requis :
+	Cas erreur 1 : OK
+	
+	Action :
+	Insérer une ligne dans common.purge_tool_conf.
+	
+	Résultat attendu :
+	Erreur : contrainte de check non-respectée.
+	
+	Script pré-requis :
+	NA
+	
+	Script action :
+	INSERT INTO common.purge_tool_conf
+	VALUES
+	(
+		'test'
+		,'date_mesure'
+		,'1 month'
+	);
+	
+
+Cas erreur 3 : Le nom de colonne précisé dans purge_tool_conf n'existe pas
+	Pré-requis :
+	Cas erreur 2 : OK
+	Créer une table test (test_id int primary key, value varchar(50));
+	
+	Action :
+	Insérer une ligne dans common.purge_tool_conf ayant pour column_name 'date_mesure'
+	
+	Résultat attendu :
+	Erreur : contrainte de check non respectée.
+	
+	Script pré-requis :
+	CREATE TABLE master.test (test_id int primary key, value varchar(50));
+	
+	Script action :
+	INSERT INTO common.purge_tool_conf
+	VALUES
+	(
+		'test'
+		,'date_mesure'
+		,'1 month'
+	);
+	
+
+Cas erreur 4 : Le format pour l'interval de rétention n'est pas acceptable
+	Pré-requis :
+	Cas erreur 3 : OK
+	Ajouter une colonne date_mesure de type timestamp à la table master.test.
+	
+	Action :
+	Insérer une ligne dans common.purge_tool_conf ayant pour retentionInterval 'date_mesure'
+	
+	Résultat attendu :
+	Erreur : contrainte de check non respectée.
+	
+	Script pré-requis :
+	CREATE TABLE master.test (test_id int primary key, value varchar(50), date_mesure timestamp);
+	
+	Script action :
+	INSERT INTO common.purge_tool_conf
+	VALUES
+	(
+		'test'
+		,'date_mesure'
+		,'1 ttt'
+	);
+
+Cas erreur 5 : Un index sur la colonne de purge est absent.
+	Pré-requis :
+	Cas erreur 4 : OK
+	Créer un nouveau client : client_1
+	Insérer une ligne dans la table common.purge_tool_conf telle que date_mesure soit la 'column_name' et retentionInterval '1 month'
+	
+	Action :
+	Appeler la fonction de purge
+	
+	Résultat attendu :
+	Erreur : Les indexes suivant sont manquants et obligatoire avant le lancement de la purge : + script de création de l'index.
+	
+	Script pré-requis :
+	CREATE TABLE master.test (test_id int primary key, value varchar(50), date_mesure timestamp);
+	CALL common.create_new_client('client_1');
+	INSERT INTO common.purge_tool_conf 	
+	VALUES
+	(
+		'test'
+		,'date_mesure'
+		,'1 month'
+	);
+	
+	Script action :
+	CALL common.data_purge();
+
+Cas nominal 2 : Purge avec deux clients
+	Pré-requis :
+	Cas nominal 1 : ok	
+	Insérer les données suivantes dans la table client_1.test :
+	test_id		date_mesure					value
+	1			maintenant -1 heure			'test'
+	2			maintenant -10 jours		'test1'
+	3			maintenant -2 mois			'test2'
+	4			maintenant -4 mois			'test3'
+	Créer l'index requis dans le cas erreur 5
+	Créer un nouveau client : client_2
+	Insérer les données suivantes dans la table client_2.test :
+	test_id		date_mesure					value
+	5			maintenant -2 mois			'test'
+	6			maintenant -1 heure			'test1'
+	7			maintenant -6 mois			'test2'
+	8			maintenant -2 ans			'test3'
+	
+	Action :
+	Appeler la fonction de purge.
+	
+	Résultat attendu :
+	Il ne reste dans la table client_1.test que les lign id = 1 et id = 2.
+	Il ne reste dans la table client_2.test que la ligne id = 6.
+	
+	Script pré-requis :	
+	CREATE TABLE master.test (test_id int primary key, value varchar(50), date_mesure timestamp);
+	CALL common.create_new_client('client_1');
+	INSERT INTO common.purge_tool_conf 	
+	VALUES
+	(
+		'test'
+		,'date_mesure'
+		,'1 month'
+	);
+	CREATE INDEX idx_test_date_mesure ON master.test USING BTREE (date_mesure);
+	CALL common.create_new_client('client_2');
+	INSERT INTO client_1.test (value, date_mesure) VALUES ('test', to_timestamp(cast(now() - interval '1 hour' as varchar), 'yyyy-mm-dd hh24:mi:ss'));
+	INSERT INTO client_1.test (value, date_mesure) VALUES ('test1', to_timestamp(cast(now() - interval '10 day' as varchar), 'yyyy-mm-dd hh24:mi:ss'));
+	INSERT INTO client_1.test (value, date_mesure) VALUES ('test2', to_timestamp(cast(now() - interval '2 month' as varchar), 'yyyy-mm-dd hh24:mi:ss'));
+	INSERT INTO client_1.test (value, date_mesure) VALUES ('test3', to_timestamp(cast(now() - interval '4 month' as varchar), 'yyyy-mm-dd hh24:mi:ss'));
+	INSERT INTO client_2.test (value, date_mesure) VALUES ('test', to_timestamp(cast(now() - interval '2 month' as varchar), 'yyyy-mm-dd hh24:mi:ss'));
+	INSERT INTO client_2.test (value, date_mesure) VALUES ('test1', to_timestamp(cast(now() - interval '1 hour' as varchar), 'yyyy-mm-dd hh24:mi:ss'));
+	INSERT INTO client_2.test (value, date_mesure) VALUES ('test2', to_timestamp(cast(now() - interval '6 month' as varchar), 'yyyy-mm-dd hh24:mi:ss'));
+	INSERT INTO client_2.test (value, date_mesure) VALUES ('test3', to_timestamp(cast(now() - interval '1 year' as varchar), 'yyyy-mm-dd hh24:mi:ss'));
+	
+	Script action :
+	CALL common.data_purge();
+
+"""""""""""""""""""""""""

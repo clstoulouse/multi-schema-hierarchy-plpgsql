@@ -1,0 +1,43 @@
+"""drop_client"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas nominal 1 : 
+	Pré-requis :
+	Créer un schéma client : 'client_66'
+		
+	Action :
+	Supprimer le client_66
+	
+	Résultat attendu :	
+	Le schéma client_66 n'existe plus
+	Le client n'est plus dans la table common.dwh_dm_client
+	Le rôle writer_client_66 n'existe plus
+	Le rôle reader_client_66 n'existe plus
+	
+	Script pré-requis :	
+	CALL common.create_new_schema('client_66');
+	
+	Script action :
+	CALL common.drop_client('client_66');
+
+	
+Cas Erreur 1 :
+	Pré-requis :
+	Cas nominal 1 : ok
+		
+	Action :
+	Supprimer le client_66
+	
+	Résultat attendu :	
+	Erreur : Le client spécifié n'existe pas
+	
+	Script pré-requis :	
+	NA
+	
+	Script action :
+	CALL common.drop_client('client_66');
+
+"""""""""""""""""""""""""

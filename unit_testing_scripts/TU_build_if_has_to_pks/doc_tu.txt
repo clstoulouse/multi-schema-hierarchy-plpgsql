@@ -1,0 +1,145 @@
+"""build_if_has_to_pks"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+Cas nominal 1 : Renommage valide
+	Pré-requis :
+	Une table est présente dans le schéma 'master' sans clé primaire.
+	
+	Action :
+	Ajout d'une colonne de type 'int' ayant pour nom 'id_test'.
+	Ajout d'une clé primaire sur la colonne créée portant pour nom : 'pk_ttt'
+	
+	Résultat attendu :
+	Une clé primaire est bien référencée sur la colonne crée.
+	Cette clé primaire porte le nom 'pk_00001'.
+	
+	Script pré-requis :
+	CREATE TABLE master.test (value varchar(25));
+	
+	Script action :
+	ALTER TABLE master.test
+	ADD id_test int;
+	
+	ALTER TABLE master.test
+	ADD CONSTRAINT pk_ttt PRIMARY KEY (id_test);
+	
+
+Cas nominal 2 : déploiement sur nouveau client + renommage valide
+	Pré-requis :
+	Cas nominal 1 OK	
+	
+	Action :
+	Un nouveau client est créé 'client_1'
+	
+	Résultat attendu :
+	La table client_1.test a pour clé primaire : pk_00001_00001.
+	
+	Script pré-requis :
+	NA
+	
+	Script action :
+	CALL create_new_client('client_1');
+	
+	
+Cas nominal 3 : déploiement sur client déjà présent + renommage valide
+	Pré-requis :
+	Cas nominal 2 OK
+	Créer une nouvelle table 'test_2' pourvu d'une colonne 'test_id' de type int.
+	
+	Action :
+	Ajouter une clé primaire nommée 'pk_ttt' a la table master.test_2
+	
+	Résultat attendu :
+	La clé sur la table master.test_2 porte le nom de pk_00002
+	Une nouvelle clé nommée 'pk_00002_00001' est présente sur la table client_1.test_2
+	
+	Script pré-requis :
+	CREATE TABLE master.test_2 (test_id int);
+	
+	Script action :
+	ALTER TABLE master.test_2 
+	ADD CONSTRAINT pk_ttt PRIMARY KEY (test_id);
+	
+	
+Cas nominal 4 : pk multicolonne sur nouvelle table
+	Pré-requis :
+	Cas nominal 3 OK
+	Créer une nouvelle table 'test_3' avec deux colonnes 'test_id' et 'test_code' qui serviront au bâti de la clé primaire.
+		
+	Action :
+	Ajouter la clé primaire 'pk_ttt' sur les deux colonnes de la nouvelle table.
+	
+	Résultat attendu :
+	La clé primaire 'pk_00003' comporte bien les deux colonnes sur le schéma master
+	La clé primaire 'pk_00003_00001' comporte bien les deux colonnes sur le schéma client_1
+		
+	Script pré-requis :
+	CREATE TABLE master.test_3 (test_id int, test_code varchar (5));
+	
+	Script action :
+	ALTER TABLE master.test_3 
+	ADD CONSTRAINT pk_ttt PRIMARY KEY (test_id, test_code);
+	
+	
+Cas nominal 5 : déploiement pk multicolonne sur nouveau client
+	Pré-requis :
+	Cas nominal 4 OK
+		
+	Action :
+	Ajouter un nouveau client.
+	
+	Résultat attendu :
+	La clé multicolonne est répercutée sur le nouveau client dans la table client_2.test_3.
+	
+	Script pré-requis :
+	NA
+	
+	Script action :
+	CALL create_new_client('client_2');
+	
+	
+Cas nominal 6 : plusieurs clients => une seule séquence
+	Pré-requis :
+	Cas nominal 5 OK
+		
+	Action :
+	Ajouter une ligne dans client_1.test
+	Ajouter une ligne dans client_2.test
+	Ajouter une ligne dans client_1.test
+	
+	Résultat attendu :
+	La colonne id_test de client_1.test comporte une valeur : 1.
+	La colonne id_test de client_2.test comporte une valeur : 2.
+	La colonne id_test de client_1.test comporte deux valeurs : 1 et 3.
+	
+	Script pré-requis :
+	NA
+	
+	Script action :
+	INSERT INTO client_1.test (value) VALUES ('test');
+	INSERT INTO client_2.test (value) VALUES ('test');
+	INSERT INTO client_1.test (value) VALUES ('test');
+	
+			
+Cas nominal 7 : pas de renommage sur les colonnes non 'int'
+	Pré-requis :
+	Cas nomnial 6 OK
+	Ajouter une table test_4 pourvue d'une colonne test_id de type varchar(50)
+	
+	Action :
+	Ajouter une contrainte de clé primaire sur la colonne master.test_4.test_id
+	
+	Résultat attendu :
+	Aucune séquence n'est créée.	
+	
+	Script pré-requis :
+	CREATE TABLE master.test_4 (test_id varchar(50));
+	
+	Script action :
+	ALTER TABLE master.test_4
+	ADD CONSTRAINT pk_xxx PRIMARY KEY (test_id);
+	
+		
+"""""""""""""""""""""""""

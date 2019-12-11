@@ -1,0 +1,59 @@
+"""sys_vacuum_diag"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+Cas nominal 1 : Un vacuum sur une table
+	Pré-requis :
+	Créer un nouveau client.
+	Créer un nouvelle table test (id serial primary key, value varchar (100))
+	Insérer des données aléatoires dans la colonne value jusqu'à hauteur de 260M de données
+	Supprimer un tiers des données de la table
+		
+	Action :
+	Appeler la procédure de vacuum sur le client_1
+	
+	Résultat attendu :	
+	Une nouvelle ligne est présente dans common.vacuum_script_results et indique un VACUUM ANALYZE sur la table client_1.test
+	
+	Script pré-requis :	
+	call common.create_new_client('client_1');
+
+	create table master.test (id serial primary key, value varchar (100));
+
+	insert into client_1.test (value)
+	select md5(random()::text) from generate_series(1, 2000000) s;
+
+	delete from client_1.test 
+	where id > 1300000;
+
+	Script action :
+	select * into debug 
+	from common.sys_vacuum_diag('client_1');
+	
+
+Cas nominal 2 : Juste un analyze sur une table
+	Pré-requis :
+	Cas nominal 1 : ok
+	Créer une table test_2 (id serial primary key, value varchar (100))
+	Insérer 1000000 de lignes dans la table test_2
+	
+	Action :
+	Appeler la procédure de vacuum sur le client_1
+	
+	Résultat attendu :
+	Une nouvelle ligne est présente dans common.vacuum_script_results et indique un ANALYZE sur la table client_1.test_2
+	
+	Script pré-requis :
+	create table master.test_2 (id serial primary key, value varchar (100));
+	insert into client_1.test_2 (value)
+	select md5(random()::text) from generate_series(1, 2000000) s;
+	
+	Script action :
+	select * into debug 
+	from common.sys_vacuum_diag('client_1');
+	
+	
+
+"""""""""""""""""""""""""

@@ -1,0 +1,94 @@
+"""build_if_has_to_idxs"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+
+Aucun client n'est présent
+
+Cas nominal 1 : 
+	Pré-requis :
+	Une table est présente dans le schéma 'master'.
+	Un client est présent.
+	
+	Action :
+	Bâtir un index non unique sur la colonne master.test.value.
+	
+	Résultat attendu :
+	L'index idx_00001 est présent sur la table master.test
+	L'index idx_00001_00001 est présent sur le table client_1.test
+	
+	Script pré-requis :
+	CALL common.create_new_client('client_1');
+	CREATE TABLE master.test (id_test_1 int primary key, value varchar(50), code varchar(5));
+	
+	Script action :
+	CREATE INDEX idx_ttt ON master.test (value);
+	
+
+Cas nominal 2 : 
+	Pré-requis :
+	Cas nominal 1 OK.
+	Ajouter des lignes pour obtenir le jeu de données suivant :
+	test
+	id		value		code
+	1		'test'		'AAA'
+	2		'test'		'BBB'
+	3		'test'		'CCC'
+	
+	Action :
+	Ajouter un index unique sur la colonne master.test.code
+	
+	Résultat attendu :
+	L'index idxu_00001 est présent sur la table master.test.
+	L'index idxu_00001_00001 est présent sur la table client_1.test
+	
+	Script pré-requis :
+	INSERT INTO client_1.test VALUES (1, 'test', 'AAA'), (2, 'test', 'BBB'), (3, 'test', 'CCC');
+	
+	Script action :
+	CREATE UNIQUE INDEX idxu_ttt ON master.test (code);
+	
+	
+Cas nominal 3 : 
+	Pré-requis :
+	Cas nominal 2 OK.
+		
+	Action :
+	Supprimer l'index idxu_00001 de la table master.test
+	
+	Résultat attendu :
+	L'index idxu_00001 n'est plus présent sur la table master.test
+	L'index idxu_00001_00001 n'est plus présent sur la table client_1.test
+	
+	Script pré-requis :
+	NA
+	
+	Script action :
+	DROP INDEX master.idxu_00001;
+	
+			
+Cas erreur 1 :
+	Pré-requis :
+	Cas nominal 3 OK
+	Obtenir les jeux de données suivants dans client_1
+	test
+	id		value		code
+	1		'test'		'AAA'
+	2		'test'		'BBB'
+	3		'test'		'CCC'
+	4		'test'		'CCC'
+	
+	Action :
+	Ajouter un index unique sur la colonne master.test.code
+	
+	Résultat attendu :
+	L'index n'est pas créé sur la table master.test
+	Lindex n'est pas créé sur la table client_1.test
+	
+	Script pré-requis :
+	INSERT INTO client_1.test VALUES (4, 'test', 'CCC');
+	
+	Script action :
+	CREATE UNIQUE INDEX idxu_ttt ON master.test (code);
+	
+		
+"""""""""""""""""""""""""

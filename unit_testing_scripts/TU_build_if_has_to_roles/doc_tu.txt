@@ -1,0 +1,112 @@
+"""build_if_has_to_roles"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+Ajouter les droits INSERT et UPDATE au profils writers sur toutes les colonnes du schéma associé au writer.
+
+Cas nominal 1 : les rôles sont créés
+	Pré-requis :
+	Une table dans le schéma master
+	
+	Action :
+	Créer un nouveau client 'client_1'
+	
+	Résultat attendu :
+	Deux nouveau rôles sont créés : reader_client_1 et writer_client_1
+	
+	Script pré-requis :
+	CREATE TABLE master.test (value varchar(50));
+	
+	Script action :
+	CALL common.create_new_client('client_1', 'client_1');
+	
+	
+Cas nominal 2 : le distingo des colonnes dans ou hors des pk séquencées avec création de clé hors création de table
+	Pré-requis :
+	Cas nominal 1 : OK
+	Ajouter une colonne 'test_id' de type int
+		
+	Action :
+	Ajouter une contrainte de clé primaire sur la colonne master.test.test_id
+	
+	Résultat attendu :
+	Seuls existes le droit de SELECT pour le profil writer_client_1 pour la colonne test_id.
+	Seuls existes le droit de SELECT pour le profil reader_client_1 pour la colonne test_id.
+	Le profil writer_client_1 bénéficie des droits SELECT sur la colonne client_1.
+	Seuls existes le droit de SELECT pour le profil writer_all pour la colonne test_id.
+	Seuls existes le droit de SELECT pour le profil reader_all pour la colonne test_id.
+	Le profil writer_all bénéficie des droits SELECT sur la colonne client_1.
+	
+	Script pré-requis :
+	ALTER TABLE master.test
+	ADD test_id int;
+	
+	Script action :
+	ALTER TABLE master.test
+	ADD CONSTRAINT pk_t PRIMARY KEY (test_id);
+	
+	
+Cas nominal 3 : le distingo des colonnes dans ou hors des pk séquencées avec création de clé dans la création de table
+	Pré-requis :
+	Cas nominal 2 : OK
+		
+	Action :
+	Créer une table test_2 avec deux champs {test_id int; value varchar(50)}
+	
+	Résultat attendu :
+	Seuls existes le droit de SELECT pour le profil writer_client_1 pour la colonne test_id.
+	Seuls existes le droit de SELECT pour le profil reader_client_1 pour la colonne test_id.
+	Le profil writer_client_1 bénéficie des droits SELECT, INSERT et UPDATE sur la colonne client_1.
+	
+	Script pré-requis :
+	NA
+	
+	Script action :
+	CREATE TABLE master.test_2 (test_id int primary key, value varchar (50));
+		
+
+Cas erreur 1 : Pas de modification sur d'autres schémas
+	Pré-requis :
+	Cas nominal 3 : OK
+	Créer un nouveau client 'client_2'
+	Avoir en base les données suivantes sur la table client_2.test :
+	test_id		value
+	4			'test'
+	5			'test'
+	6			'test'
+	
+	Action :
+	Définir le rôle de session comme étant celui de writer_client_1.
+	Modifier la ligne ayant pour client_2.test.test_id 3.
+	
+	Résultat attendu : 
+	Échec de la modification par manque de droits.
+	
+	Script pré-requis:
+	INSERT INTO client_2.test (value) VALUES ('test'), ('test'), ('test');
+	
+	Script action:
+	SET ROLE writer_client_1;
+	UPDATE client_2.test SET value = 'test_zzz' where test_id = 4;
+	
+
+Cas erreur 2 : Pas de lecture sur d'autres schémas
+	Pré-requis :
+	Cas erreur 1 : OK
+	
+	Action :
+	Définir le rôle de session comme étant celui de writer_client_1.
+	Afficher les données de la table client_2.test;
+	
+	Résultat attendu : 
+	Échec de la consultation par manque de droits.
+	
+	Script pré-requis:
+	NA
+	
+	Script action:
+	SET ROLE writer_client_1;
+	SELECT * FROM client_2.test;
+		
+"""""""""""""""""""""""""

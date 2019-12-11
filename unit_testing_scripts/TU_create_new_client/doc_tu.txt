@@ -1,0 +1,48 @@
+"""create_new_client"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+
+Cas nominal 1 : Le schéma est créé avec tout ce qui doit le composer
+	Pré-requis :
+	NA
+	
+	Action :
+	Créer un nouveau client
+	
+	Résultat attendu :
+	Une ligne supplémentaire est créé dans la table 'common.dwh_dm_client'
+	Le schéma est créé
+	Le rôle reader associé existe
+	Le rôle writer associé existe	
+	Les deux rôles ont le droit USAGE sur le schéma créé
+	Les rôles reader_all et writer_all ont le droit USAGE sur le schéma créé
+	Les deux rôles ont search_path le nom du nouveau schéma
+	
+	Script pré-requis :	
+	NA
+	
+	Script action :
+	CALL common.create_new_client('client_1');
+	
+ 
+Cas d'erreur 1 : Le client existe déjà
+	Pré-requis :
+	Cas nominal 1 : OK
+	
+	Action :
+	Créer un client portant le même nom que le précédemment créé.
+	
+	Résultat attendu :
+	Erreur : This client alreday exist
+	
+	Script pré-requis :
+	NA
+	
+	Script action :
+	CALL common.create_new_client('client_1');	
+	
+
+"""""""""""""""""""""""""

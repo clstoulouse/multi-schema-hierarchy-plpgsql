@@ -1,0 +1,118 @@
+"""constraint_naming_control"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+Aucun client n'est présent
+
+
+
+Cas nominal 1 : Renommage de la pk
+	Pré-requis :
+	NA
+	
+	Action :
+	Créer une table 'test' (test_id int primary key, value varchar(50))	
+	
+	Résultat attendu :	
+	La table master.test a pour clé primaire 'pk_00001'
+	
+	Script pré-requis :	
+	NA
+	
+	Script action :
+	CREATE TABLE master.test (test_id int primary key, value varchar(50));
+
+Cas nominal 2 : Renommage de la fk
+	Pré-requis :
+	Cas nominal 1 : ok
+	
+	Action :
+	Créer une table 'test_2 (test_2_id int primary key, value varchar (50), test_id references test (test_id))
+	
+	Résultat attendu :	
+	Une nouvelle clé étrangère est présente sur la table master.test_2 et porte le nom fk_00001
+	
+	Script pré-requis :	
+	NA
+	
+	Script action :
+	CREATE TABLE master.test_2 (test_2_id int primary key, value varchar (50), test_id references test (test_id));
+	
+	
+Cas nominal 3 : Deux tables doublement liées (les deux contraintes de clé étrangère vont portées les mêmes nom _1)
+	Pré-requis :
+	Créer une table 'test_3' (test_3_id int primary key, test_id_1 int, test_id_1_2 int)
+	
+	Action :
+	Créer les clés étrangères  test_id_1 -> test.test_id et test_id_1_2 -> test.test_id	
+	
+	Résultat attendu :	
+	Les clés étrangères suivantes sont créées sur la table test_3:
+	- fk_00002
+	- fk_00003
+		
+	Script pré-requis :	
+	CREATE TABLE master.test_3 (test_3_id int primary key, test_id_1 int, test_id_1_2 int); 
+	
+	Script action :
+	ALTER TABLE master.test_3
+	ADD CONSTRAINT fk_ttt FOREIGN KEY (test_id_1) REFERENCES test (test_id);
+	ALTER TABLE master.test_3
+	ADD CONSTRAINT fk_qqq FOREIGN KEY (test_id_1_2) REFERENCES test (test_id_1_2);
+	
+	
+Cas nominal 4 : Ajouter un client 'client_1'
+	Pré-requis :
+	Cas nominal 3 : Ok
+	
+	Action :
+	Créer un nouveau client
+	
+	Résultat attendu :	
+	Les clés étrangères suivantes sont créées sur la table client_1.test_3:
+	- fk_00002_00001
+	- fk_00003_00001
+		
+	Script pré-requis :	
+	NA
+	
+	Script action :
+	CALL common.create_new_client('client_1', 'client_1');
+	
+	
+Cas d'erreur 1 : Préciser un nom de contrainte de clé primaire (pk_ttt par exemple)
+	Pré-requis : 
+	Créer une table test_4 (test_id_4 int, value varchar(50), test_id int)
+	
+	Action :
+	Créer une contrainte de clé primaire sur la colonne master.test_4.test_id_4 portant le nom pk_ttt
+	
+	Résultat attendu :	
+	La clé primaire ne porte pas ce nom.
+	
+	Script pré-requis :	
+	CREATE TABLE test_4 (test_id_4 int, value varchar(50), test_id int);	
+	
+	Script action :
+	ALTER TABLE master.test_4
+	ADD CONSTRAINT pk_ttt PRIMARY KEY (test_4_id);
+	
+	
+Cas d'erreur 2 : Préciser un nom de contrainte de clé étrangère (pk_ttt par exemple)
+	Pré-requis :
+	NA
+	
+	Action :
+	Créer une contrainte de clé étrangère portant le nom 'kkkjjj' référant test_id à test (test_id)
+	
+	Résultat attendu :	
+	La contrainte ne porte pas le nom voulu
+	
+	Script pré-requis :	
+	NA
+	
+	Script action :
+	ALTER TABLE test_4
+	ADD CONSTRAINT kkkjjj FOREIGN KEY (test_id) REFERENCES test (test_id);
+	
+	
+"""""""""""""""""""""""""

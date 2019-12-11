@@ -1,0 +1,108 @@
+"""build_if_has_to_fks"""
+Situation initiale : le schéma 'master' est vide.
+CALL common.testing_init_master();
+
+Aucun client n'est présent
+
+Cas nominal 1 : 
+	Pré-requis :
+	Deux tables sont présentes dans le schéma 'master'.
+	Un client est présent.
+	
+	Action :
+	Une des tables est référencée par une clé étrangère dans l'autre table.
+	
+	Résultat attendu :
+	La clé étrangère dans le schéma master porte le nom suivant : 'fk_00001'.
+	Une clé étrangère est présente dans la table client_1.test_2. Cette clé étrangère porte le nom : 
+	fk_00001_00001
+	
+	Script pré-requis :
+	CALL common.create_new_client('client_1');
+	CREATE TABLE master.test_1 (id_test_1 int primary key, value varchar(50));
+	CREATE TABLE master.test_2 (id_test_2 int primary key, value varchar(50), id_test_1 int);
+	
+	Script action :
+	ALTER TABLE master.test_2
+	ADD CONSTRAINT fk_tttt
+	FOREIGN KEY (id_test_1) REFERENCES master.test_1 (id_test_1);
+	
+		
+Cas nominal 2 :
+	Pré-requis :
+	Cas nominal 1 OK
+	Une table est ajoutée dans le schéma 'master'.
+	
+	Action :
+	La clé étrangère du cas nominal 1 est supprimé.
+	Une nouvelle clé étrangère est créée entre la nouvelle table et une ancienne table.
+	
+	Résultats attendus :
+	La clé étrangère fk_00001 n'existe plus sur le schéma master.
+	La clé étrangère fk_00001_00001 n'existe plus.
+	La clé étrangère fk_00002 a été créée sur master.test_3.
+	La clé étrangère fk_00002_00001 a été créée sur client_1.test_3.
+	
+	Script pré-requis :
+	État final cas nominal 1.
+	CREATE TABLE master.test_3 (id_test_3 int primary key, value varchar(50), id_test_2 int);
+	
+	Script action :
+	ALTER TABLE master.test_2
+	DROP CONSTRAINT fk_00001;
+	ALTER TABLE master.test_3
+	ADD CONSTRAINT fk_tttt
+	FOREIGN KEY (id_test_2) REFERENCES master.test_2 (id_test_2);
+	
+	
+Cas nominal 3 :
+	Pré-requis : 
+	Cas nominal 2 OK
+	
+	Action :
+	Un client nouveau est créé.
+	
+	Résultats attendus:
+	Un nouveau schéma est créé 'client_2'.
+	Ce nouveau schéma comporte les trois tables : test_1, test_2 et test_3.
+	La clé étrangère fk_00002_00002 est présente sur client_2.test_3 et référence client_2.test_2.id_test_2
+	
+	Script pré-requis :
+	État final cas nominal 2.
+	
+	Script action :
+	CALL create_new_client('client_2');
+	
+	
+Cas erreur 1 :
+	Pré-requis :
+	Cas nominal 3 OK
+	Obtenir les jeux de données suivants dans client_2
+	test_1					test_2
+	id_test_1	value		id_test_2	id_test_1	value
+	1			test		1			4			test
+	2			test		2			1			test
+	3			test		3			1			test
+	
+	Action :
+	Une nouvelle clé étrangère est créée référençant client_2.test_1.id_test_1 dans client_2.test_2
+	
+	Résultat attendu :
+	Une ligne dans la table common.debugger doit apparaître comme suis :
+	'[id], [date_modif], [ip], 'build_if_has_to_fks', 'Impossible de créer les clés étrangères sur client_2. Incohérence de données.', 0'
+	La clé étrangère fk_00001 dans master ne doit pas être présente.
+	La clé étrangère fk_00001_00001 dans client_1 ne doit pas être présente.
+	La clé étrangère fk_00001_00002 dans client_2 ne doit pas être présente.
+	
+	Script pré-requis :
+	État final cas nominal 3
+	INSERT INTO client_2.test_1 (value) VALUES ('test'), ('test'), ('test');
+	INSERT INTO client_2.test_2 (value, id_test_1) VALUES ('test', 4), ('test', 1), ('test', 1);	
+	
+	Script action :
+	ALTER TABLE master.test_2
+	ADD CONSTRAINT fk_tttt
+	FOREIGN KEY (id_test_1) REFERENCES master.test_1 (id_test_1);
+	
+		
+"""""""""""""""""""""""""
