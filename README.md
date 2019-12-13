@@ -1,4 +1,4 @@
-# Motu Project
+# Multi Schema Hierarchy PGPSQL Project
 @author <smartin@groupcls.com>: Project manager & Product owner  
 @author <jaisus666@hotmail.fr>: Software architect, Developer   
 
