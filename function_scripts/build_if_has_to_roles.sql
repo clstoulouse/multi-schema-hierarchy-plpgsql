@@ -10,11 +10,63 @@ AS $$
 --	User		Date			Motives
 --	JPI			15/02/2019		Création
 --  JPI			04/04/2019		Ajout de la discrimination du schéma de test unitaire
+--	JPI			08/04/2020		Bug Fix : blindage afin de rajouter les rôles qui pourraient manquer suite à maintenance.
 --
 ---------------------------------------------------------------------------------------------------------------
 DECLARE 
 	query character varying;
 BEGIN
+	-- blindage : créer les rôles writer s'ils n'existent pas avec les droits de base. 
+	with cte_all_clients as
+	(
+		-- Tous les clients
+		select schema_name
+		from information_schema.schemata
+		where schema_name <> 'information_schema' 
+			and schema_name <> 'common'
+			and schema_name <> 'pg_catalog'
+			and schema_name <> 'master'
+			and schema_name <> 'unit_tests'
+			and schema_name not like 'pg_toast%'
+			and schema_name not like 'pg_temp%'
+	)
+	, cte_all_present_roles as
+	(
+		select role_name
+		from information_schema.enabled_roles ara
+	)
+	, cte_all_due_roles as
+	(
+		select 
+			'writer_'||schema_name as role_name
+			 , schema_name
+		from cte_all_clients
+		union
+		select 
+			'reader_'||schema_name as role_name
+			 , schema_name
+		from cte_all_clients
+	)
+	select 
+		string_agg(
+		'CREATE ROLE '||c1.role_name||' login password '''||c1.role_name||''';'||chr(10)||
+		'GRANT USAGE ON SCHEMA '||schema_name||' TO '||c1.role_name||';'||chr(10)||
+		'ALTER ROLE '||c1.role_name||' IN DATABASE "'||(SELECT current_database())||'" SET search_path TO '||schema_name||';'
+			, chr(10)
+		) into query
+	from cte_all_due_roles c1
+	where not exists (
+			select 1
+			from cte_all_present_roles c3
+			where c3.role_name = c1.role_name
+		);
+		
+	if query is not null 
+	then 
+		EXECUTE query;
+		CALL common.deblog(CAST('build_if_has_to_roles add needed roles' as varchar), CAST(query as text), cast(1 as bit));
+	end if;
+	
 	-- grant update et insert au writer pour toutes les colonnes sauf les pk qui ont une séquence
 	with cte_all_clients as
 	(
