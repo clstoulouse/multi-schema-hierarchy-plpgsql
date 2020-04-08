@@ -38,6 +38,8 @@ BEGIN
 	
 	if schema_name = 'master' and command_tag = 'CREATE TABLE'
 	then
+		call common.shielder();
+		
 		RAISE NOTICE 'launch procedures trigger CREATE';
 		call common.build_if_has_to_tables();	
 		call common.constraint_naming_control_first();	
