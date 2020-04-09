@@ -14,6 +14,7 @@ AS $$
 --	JPI			04/04/2019		Bug : gestion d'erreur APRES le rollback
 --	JPI			11/04/2019		Bug : Suppression de duplication de code inutile et causant des bugs.
 --	JPI			12/04/2019		Bug : Changement de table de détection du schéma 'master'
+--	JPI			01/04/2019		Bug : Gestion du nom de la base en majuscule
 --
 ---------------------------------------------------------------------------------------------------------------
 DECLARE
@@ -85,12 +86,12 @@ BEGIN
 		CALL common.deblog(CAST('create_new_client' as varchar), CAST(query as text), cast(1 as bit));
 		
 		-- Attribuer au reader du nouveau client, lors de sa connection, le search_path par défaut (le schéma du nouveau client)
-		query := 'alter role reader_'||client_name||' in database '||current_db_name||' set search_path to '||client_name||';';
+		query := 'alter role reader_'||client_name||' in database "'||current_db_name||'" set search_path to '||client_name||';';
 		EXECUTE query;
 		CALL common.deblog(CAST('create_new_client' as varchar), CAST(query as text), cast(1 as bit));
 
 		-- Set the search path for the schema
-		query := 'alter role writer_'||client_name||' in database '||current_db_name||' set search_path to '||client_name||';';
+		query := 'alter role writer_'||client_name||' in database "'||current_db_name||'" set search_path to '||client_name||';';
 		EXECUTE query;
 		CALL common.deblog(CAST('create_new_client' as varchar), CAST(query as text), cast(1 as bit));
 				

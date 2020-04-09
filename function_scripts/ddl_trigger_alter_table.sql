@@ -39,6 +39,7 @@ BEGIN
 		RAISE NOTICE 'object_type : %', object_type;
 		
 		select common.constraint_naming_control_limiter()::int into constraint_naming_limiter;
+		call common.shielder();
 		
 		if
 			constraint_naming_limiter > 0

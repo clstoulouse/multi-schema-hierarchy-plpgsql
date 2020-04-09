@@ -1,17 +1,17 @@
-create or replace procedure common.build_if_has_to_fks()
-language plpgsql
-as $$
+CREATE OR REPLACE PROCEDURE common.build_if_has_to_fks()
+ LANGUAGE plpgsql
+AS $procedure$
 ---------------------------------------------------------------------------------------------------------------
 -- Objet : 
---			Le but de cette procédure est de propager les clés étrangères
+--			Le but de cette procÃ©dure est de propager les clÃ©s Ã©trangÃ¨res
 -- Origines : PostgreSQL v11 | 15/02/2019
 -- Limitation :
 ---------------------------------------------------------------------------------------------------------------
 --	User		Date			Motives
---	JPI			15/02/2019		Création
---  JPI			04/04/2019		Ajout de la discrimination du schéma de test unitaire
+--	JPI			15/02/2019		CrÃ©ation
+--  JPI			04/04/2019		Ajout de la discrimination du schÃ©ma de test unitaire
 --  JPI			03/05/2019		Bug : les contraintes ne remontaient pas dans l'information schema. Appui sur 
---								le catalog à la place.
+--								le catalog Ã  la place.
 --	JPI			31/07/2019		Correction pour la propagation des contraintes (cf. constraint_naming_control.sql)
 --
 ---------------------------------------------------------------------------------------------------------------
@@ -23,18 +23,18 @@ begin
 		SELECT
 			rel.relname as table_name
 			, ccu.relname as ref_table_name
-			, pg_get_constraintdef(con.oid) as con_def						-- Contient la défintion DDL de la contrainte. Need to add the alter table by and though.
+			, pg_get_constraintdef(con.oid) as con_def						-- Contient la dÃ©fintion DDL de la contrainte. Need to add the alter table by and though.
 			, con.conname													-- Le nom de la contrainte
 			, case when pg_get_constraintdef(con.oid) not like '%master.%' then 0 else 1 end as replacer
-		FROM pg_catalog.pg_constraint con									-- La table système renfermant les très saintes contraintes
-			INNER JOIN pg_catalog.pg_class rel								-- Objet système représentant la table sur laquelle est posée la contrainte.
+		FROM pg_catalog.pg_constraint con									-- La table systÃ¨me renfermant les trÃ¨s saintes contraintes
+			INNER JOIN pg_catalog.pg_class rel								-- Objet systÃ¨me reprÃ©sentant la table sur laquelle est posÃ©e la contrainte.
 				ON rel.oid = con.conrelid
-			INNER JOIN pg_catalog.pg_namespace nsp							-- Objet système représentant le schéma sur lequel est la table.
+			INNER JOIN pg_catalog.pg_namespace nsp							-- Objet systÃ¨me reprÃ©sentant le schÃ©ma sur lequel est la table.
 				ON nsp.oid = connamespace							
-			INNER JOIN pg_class AS ccu	-- Table à laquelle la contrainte fait référence
+			INNER JOIN pg_class AS ccu	-- Table Ã  laquelle la contrainte fait rÃ©fÃ©rence
 				ON con.confrelid = ccu.oid
 		WHERE nsp.nspname = 'master'
-			and con.contype = 'f'											-- Type de contrainte > clé étrangère (Foreign key)
+			and con.contype = 'f'											-- Type de contrainte > clÃ© Ã©trangÃ¨re (Foreign key)
 	)
 	, cte_all_client_list as
 	(
@@ -53,7 +53,7 @@ begin
 	)
 	, cte_clients_fks as
 	(
-		-- Lister toutes les contraintes de clés étrangère des différents clients
+		-- Lister toutes les contraintes de clÃ©s Ã©trangÃ¨re des diffÃ©rents clients
 		SELECT
 			rel.relname as table_name
 			, ccu.relname as ref_table_name
@@ -65,17 +65,21 @@ begin
 				ON rel.oid = con.conrelid
 			INNER JOIN pg_catalog.pg_namespace nsp
 				ON nsp.oid = connamespace
-			INNER JOIN pg_class AS ccu	-- Table à laquelle la contrainte fait référence
+			INNER JOIN pg_class AS ccu	-- Table Ã  laquelle la contrainte fait rÃ©fÃ©rence
 				ON con.confrelid = ccu.oid
 		WHERE con.contype = 'f'
 			and exists (select 1 from cte_all_client_list where schema_name = nsp.nspname)
 	)
 	select 
-		-- Construction des contraintes manquantes et agrégation des scripts
+		-- Construction des contraintes manquantes et agrÃ©gation des scripts
 		string_agg(
 		'ALTER TABLE '||c.schema_name||'.'||m.table_name||' 
-		ADD CONSTRAINT '||m.conname||'_'||LPAD(c.client_id::text, 5, '0')||' '||replace(m.con_def, 'master', c.schema_name)||';'
-		||chr(10)||
+		ADD CONSTRAINT '||m.conname||'_'||LPAD(c.client_id::text, 5, '0')||' '||
+			case when position('REFERENCES master.' in m.con_def) > 0 
+				then replace (m.con_def, 'master', c.schema_name)
+				else replace(m.con_def, 'REFERENCES ', 'REFERENCES ' || c.schema_name || '.')
+			end
+		||';'||chr(10)||
 		'COMMENT ON CONSTRAINT '||m.conname||'_'||LPAD(c.client_id::text, 5, '0')||' ON '||c.schema_name||'.'||m.table_name||' IS '''||
 			'Contrainte de type FOREIGN KEY de '||c.schema_name||'.'||m.table_name||' vers '||c.schema_name||'.'||m.ref_table_name
 			||''';'
@@ -104,4 +108,5 @@ begin
 			CALL common.deblog(CAST('build_if_has_to_fks' as varchar), CAST(SQLERRM as text), cast(0 as bit));
 			ROLLBACK;
 END;
-$$;
+$procedure$
+;

@@ -11,6 +11,11 @@ BEGIN
 	FOR r IN SELECT * FROM pg_event_trigger_ddl_commands() LOOP
 		if r.schema_name = 'master' and r.command_tag = 'CREATE TABLE'
 		then
+			if substring(r.object_identity, 8) like '%.%'
+				or substring(r.object_identity, 8) like '%master%'
+				then raise exception 'Do not use ''.'' character or ''master'' string in the table name.';
+			end if;
+			
 			schema_name := r.schema_name;
 			command_tag := r.command_tag;
 			RAISE NOTICE 'caught % event on %', r.command_tag, r.object_identity;
@@ -33,6 +38,8 @@ BEGIN
 	
 	if schema_name = 'master' and command_tag = 'CREATE TABLE'
 	then
+		call common.shielder();
+		
 		RAISE NOTICE 'launch procedures trigger CREATE';
 		call common.build_if_has_to_tables();	
 		call common.constraint_naming_control_first();	
