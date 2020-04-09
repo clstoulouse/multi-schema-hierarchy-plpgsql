@@ -9,6 +9,7 @@ as $$
 --	User		Date			Motives
 --	JPI			15/02/2019		Création
 --  JPI			04/04/2019		Ajout de la discrimination du schéma de test unitaire
+-- 	JPI			08/04/2020		Bug fix : problème de suppression des clés si plusieurs font la même chose.
 --
 ---------------------------------------------------------------------------------------------------------------
 declare
@@ -77,8 +78,7 @@ begin
 		(
 			select 1
 			from cte_master_pks cf
-			where cf.con_def = replace(c.con_def, c.schema_name, 'master')
-				and c.table_name = cf.table_name
+			where cf.cons_name = substring(c.cons_name, 0, 9)
 		);
 	
 	--RAISE NOTICE ' %', query;
