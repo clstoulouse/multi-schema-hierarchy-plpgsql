@@ -65,6 +65,7 @@ begin
 				or common.isnumeric(substring(conname, 4, 8)) is false
 				or (substring(conname, 1 ,3) <> 'pk_' and substring(conname, 1 ,3) <> 'fk_')
 			)
+			and contype in ('f', 'p')
 	)
 	select string_agg(queriable, chr(10)) into query
 	from cte_query

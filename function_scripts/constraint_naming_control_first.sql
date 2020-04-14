@@ -59,6 +59,7 @@ begin
 				or common.isnumeric(substring(conname, 4, 8)) is false
 				or (substring(conname, 1 ,3) <> 'pk_' and substring(conname, 1 ,3) <> 'fk_')
 			)
+			and contype in ('f', 'p')
 		limit 1
 	)
 	select 'COMMENT ON CONSTRAINT '||conname||' ON master.'||table_name||' IS '''||
