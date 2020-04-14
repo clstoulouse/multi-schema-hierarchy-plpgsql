@@ -76,9 +76,12 @@ BEGIN
 	SELECT 
 		-- Aggregate all the instructions
 		string_agg(
-		replace(replace(idxs, m.idx_name, m.idx_name||'_'||LPAD(c.client_id::text, 5, '0')), 'master', c.schema_name)||';'	
-		||chr(10)||
-		'COMMENT ON INDEX '||schema_name||'.'||m.idx_name||'_'||LPAD(c.client_id::text, 5, '0')||' IS ''Index de type '||index_type||' sur les colonnes '||liste_colonne||' sur la table '||schema_name||'.'||table_name||' '||case when indisunique then '(UNIQUE)'';' else ''';' end, chr(10)
+			case when position('ON master.' in idxs) > 0 
+				then replace(replace(idxs, m.idx_name, m.idx_name||'_'||LPAD(c.client_id::text, 5, '0')), 'master', c.schema_name)
+				else replace(replace(idxs, m.idx_name, m.idx_name||'_'||LPAD(c.client_id::text, 5, '0')), 'ON ', 'ON ' || c.schema_name || '.')
+			end
+			||';'||chr(10)||
+			'COMMENT ON INDEX '||schema_name||'.'||m.idx_name||'_'||LPAD(c.client_id::text, 5, '0')||' IS ''Index de type '||index_type||' sur les colonnes '||liste_colonne||' sur la table '||schema_name||'.'||table_name||' '||case when indisunique then '(UNIQUE)'';' else ''';' end, chr(10)
 		) into query
 	FROM cte_all_client_list c
 		CROSS JOIN cte_idx_master m								-- Créer le référentiel idéal : tous les index présents dans le 'master' sont dans tous les clients.

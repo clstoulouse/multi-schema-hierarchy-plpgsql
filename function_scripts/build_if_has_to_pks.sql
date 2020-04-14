@@ -76,8 +76,12 @@ begin
 	select 
 		string_agg(
 		'ALTER TABLE '||c.schema_name||'.'||m.table_name||'
-		ADD CONSTRAINT '||m.conname||'_'||LPAD(c.client_id::text, 5, '0')||' '||replace(m.con_def, 'master', c.schema_name)||';'
-		||chr(10)||		
+		ADD CONSTRAINT '||m.conname||'_'||LPAD(c.client_id::text, 5, '0')||' '||
+			case when position('REFERENCES master.' in m.con_def) > 0 
+				then replace (m.con_def, 'master', c.schema_name)
+				else replace(m.con_def, 'REFERENCES ', 'REFERENCES ' || c.schema_name || '.')
+			end
+		||';'||chr(10)||		
 		'COMMENT ON CONSTRAINT '||conname||'_'||LPAD(c.client_id::text, 5, '0')||' ON '||c.schema_name||'.'||table_name||' IS '''||
 			'Contrainte de type PRIMARY KEY sur la table '||c.schema_name||'.'||m.table_name
 			||''';', chr(13)) into query

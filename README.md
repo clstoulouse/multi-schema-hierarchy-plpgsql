@@ -23,30 +23,30 @@ These scripts are dedicated to automatization of schema's replication.
 In a context where you have a master schema in a PostgreSQL database, and you want to ensure that all other schemas are the exact replication of this master, you need to have each object structured and to control at each single change that everything is consistant.
 Then, these scripts overwatch the database to automatically:
 
-* Automatically create a new child schema using the current structure of the master schema
+* Create a new child schema using the current structure of the master schema
 * Harmonize names for each object
 * Deploy each change made on the master schema
 * Cancel each change made on a child schema if there is no corresponding change in the master schema
 
-A technical schema, names 'common', is used to store common functions.
+A technical schema, named 'common', is used to store common functions.
 Once the scripts are [installed](#Installation), changes will be automatically detected and the related action automatically launched.
 
 ## <a name="Installation">Installation</a>  
 
-A scrit is dedicate to deploy a brand new environment : *init\_all.sh*
+A scrit is dedicated to deploy a brand new environment : *init\_all.sh*
 This script needs to be in a folder that contains the following subfolders:
 
 * DWH_WASTE_TU : contains unit tests
 * waste_dwh_script : contains multi-schema management scripts
 
-You will be prompted to detail the server where the database will be created and relate authentication details.
+You will be prompted to detail the server where the database will be created and related authentication details.
 
 The script will:
 
-* Cretae / modify the given database with all necessary components
+* Create / modify the given database with all necessary components
 * Launch automated tests to ensure everything will run correctly
 
-At this stage, it is strongly recommand to **never launch this scritp on an existing database** unless you intend to delete it (wich will also remove all data without saving them) and create it again.
+At this stage, it is strongly recommanded to **never launch this script on an existing database** unless you intend to delete it (wich will also remove all data without saving them nor prompting any advice) and create it again.
 
 ## <a name="Architecture">Architecture</a>  
 
@@ -55,7 +55,7 @@ At this stage, it is strongly recommand to **never launch this scritp on an exis
 Two main schemas are created:
 
 * *common*, a technical schema where all common features are stored
-* *master*, the master schema is the single one where changes are supposed to be done.
+* *master*, the master schema is the single one where changes are supposed to be performed.
 
 Dedicated roles are also automatically created:
 
@@ -66,8 +66,8 @@ Dedicated roles are also automatically created:
   * Create primary and foreign keys in *master* schema
   * Create, update, delete sequences in *master* schema
   * It is not possible for a developper to make changes on a child schema, nor update data in a child schema
-* A *Dashboard role* able to read data in the *master* schema and all children schema
-* A *Administrator role*, which is NOT *postgres*, to allow to modify the whole system for maintenance purposes. This role is the only one with the ability to create and delete child schema.
+* A *Dashboard role* able to read data in the *master* schema and all children schemas
+* A *Administrator role*, which is NOT *postgres*, to allow to modify the whole system for maintenance purposes. This role is the only one with the ability to create and delete child schemas.
 * *reader_all*: read-only access to the *master* schema and all children
 * *writer_all*: create, read, update, delete access to the *master* schema and all children
 
@@ -83,8 +83,8 @@ The scripts create procedures and triggers to manage child schemas' creation (an
 The scripts are developped and tested for PostgreSQL 11.x databases.
 In the *common* schema, a table named *Customer* is dedicated to store each child name. These scripts have been developed to manage customer data and this solution requires that one schema is created for each single client.
 
-When a primary key is defined (in the *master* schema) and when it is base on a single integer column, then a sequence will be created in the *master* schema. This sequence will be the default value for this primary key. Thus, due to the fact that, in PostgreSQL, a sequence is [non-transactional](https://www.postgresql.org/docs/current/functions-sequence.html), the unicity of the key is guaranted even across child tables that will be created using this sequence for thei primary keys.
-Therefore, **IT IS STRONGLY RECOMMANDED to create primary keys on single interger columns**.  
+When a primary key is defined (in the *master* schema) and when it is based on a single integer column, then a sequence will be created in the *master* schema. This sequence will be the default value for this primary key. Thus, due to the fact that, in PostgreSQL, a sequence is [non-transactional](https://www.postgresql.org/docs/current/functions-sequence.html), the unicity of the key is guaranted even across child tables that will be created using this sequence for their primary keys.
+Therefore, **IT IS STRONGLY RECOMMANDED to create primary keys on single integer columns**.  
 
 Some [EVENT TRIGGERS](https://www.postgresql.org/docs/current/event-triggers.html) will be created on the following actions: *CREATE TABLE*, *ALTER TABLE*, *DROP TABLE*, *CREATE INDEX*. These triggers will call necessary stored procedures to ensure each action made on the *master* schema will be reproduced on each *child* schema.
 
@@ -115,7 +115,7 @@ It performs the following actions:
 * If table common.dwh_dm_client does not exists, it is created
 * Create a new ligne in common.client (after an included unicity check on the schema's name)
 * Create a new child schema using the given name
-* Create all tables and objects acoording to the current *master* structure
+* Create all tables and objects according to the current *master* structure
   * Primary keys are named according this rule : 'pk_[nom_table]_[nom_client]'
   * Foreign keys are named according this rule : 'fk_[nom_table_support_contrainte]_[nom_table_référencée]_[nom_client]_[numéro_itéré]'
   * Reader role is named : 'reader_[nom_client]'; his default schema is the new created one and it comes with USAGE privilege on the schema and SELECT privilege on all tables within the schema
@@ -148,14 +148,14 @@ These triggers are listed hereafter.
 
 This is performed using the standard CREATE TABLE SQL statement. It launches *ddl\_trigger\_create\_table\_fct* event trigger which performs the following actions:
 
-* Create table with the same characteristics in each *child* schema
+* Create table with the same characteristics in each *child* schema (new tables actually *INHERITS* tables in *master* schema)
 * Provide roles with privileges on the table according to roles definition
 
 Caution: **NEVER USE A CUSTOMER NAME OR A FUNCTIONAL KEYWORD IN TABLE NAMES**
 
 ##### Modify (ALTER) table (in *master* schema)
 
-Modifying a table, always in *master* schema, is done with a standard SQL statement (ALTER TABLE); will launch a trigger to cascade the modifiction. This trigger also launches several checks to ensure child schemas are still in line with *master* and, if necessary, perform correction actions.  
+Modifying a table, always in *master* schema, is done with a standard SQL statement (ALTER TABLE); it will launch a trigger to cascade the modifiction. This trigger also launches several checks to ensure child schemas are still in line with *master* and, if necessary, perform corrective actions.  
 Here is the related checklist:
 
 * Check names: all objects should have names corresponding to the defined structures. If this is not the case, it means that changes have been made locally, on one or several *child* schemas, which should not occur: this is corrected accordingly.
@@ -175,7 +175,7 @@ It launches *ddl_trigger_drop_table_fct* which will delete the table in each *ch
 
 ##### Create / Update / Delete indexes
 
-There is one trigger for each action and each one propagates the action within childre schemas as soon as the action occurs in the *master* schema:
+There is one trigger for each action and each one propagates the action within children schemas as soon as the action occurs in the *master* schema:
 
 * Creation and update are propagated thanks to *build\_if\_has\_to\_idxs.sql* script
 * Deletion is propagated thanks to *delete\_indexes\_on\_cascade.sql* script
@@ -190,7 +190,7 @@ These groups of scripts control the names of constraints and indexes and rename 
 
 * *constraint\_naming\_control\_limiter.sql*: counts the number of constraints to be renamed
 * *constraint\_naming\_control\_first.sql*: rename constraints
-* *constraint\_naming\_control.sql*: rename constraints => still used ???
+* *constraint\_naming\_control.sql*: rename constraints
 
 2 scripts are dedicated to index renaming;
 
@@ -226,11 +226,11 @@ FOREIGN KEY (||m.ref\_columns||) REFERENCES ||c.schema\_name||.||m.ref\_table\_n
 The first step is to delete all sequences named 'seq\_pk\_%' and that are not default values for any column within *master* schema anymore (this action is **irreversible** but is not supposed to have any impact).
 Then, for each table within *master* schema, create missing sequences on columns that meet the following conditions:
 
-* Has a primary key and is the only columùn the key is defined on
+* Has a primary key and is the only column the key is defined on
 * The data type is an integer (small int, int or big int)
 * It has no sequence as default value yet
 
-Then, for eache table within *master* schema, rename sequences on primary keys when the current name is not: 'sq\_pk\_[nom_table]'
+Then, for each table within *master* schema, rename sequences on primary keys when the current name is not: 'sq\_pk\_[nom_table]'
 Finally, provides *writer* roles with USAGE privileges on the sequences named 'seq\_pk\_%'.
 
 ##### Indexes propagation (build\_if\_has\_to\_idxs.sql / delete\_indexes\_on\_cascade.sql)
@@ -240,7 +240,7 @@ It creates all indexes that exist in *master* schema but not in children ones.
 
 ##### Roles propagation (build\_if\_has\_to\_roles.sql / drop\_cascade\_roles.sql)
 
-When a column is added or deleted in a table within *master* schema, the change is replicated within all childre schemas. But the privileges are not automatically granted and this procedures will perform this action : UPDATE and INSERT privileges are granted to *writers* for each schema.  
+When a column is added or deleted in a table within *master* schema, the change is replicated within all children schemas. But the privileges are not automatically granted and this procedures will perform this action : UPDATE and INSERT privileges are granted to *writers* for each schema.  
 All columns are concerned, except those that are primary keys with a dedicated sequence.
 
 #### <a name="Tools">Tools</a>
@@ -249,7 +249,7 @@ All columns are concerned, except those that are primary keys with a dedicated s
 
 This script is launched to initialize the database and will create the following tables in *common* schema:
 
-* *dwh_dm_client*: list of childre schemas
+* *dwh_dm_client*: list of children schemas
 * *purge_tool_conf*: data purge configuration table (see 'Data purge' for details)
 * *vacuum_script_results*: stores results of vacuum and analizes (see 'Vacuum and analyse' for details)
 
@@ -257,7 +257,7 @@ It also creates necessary sequences.
 
 ##### Reset foreign keys (reset\_fks.sql)
 
-It happend that some foreign keys have not been correctly initialized and this scripts is buld to reset them if necessary.
+It happened that some foreign keys have not been correctly initialized and this script is built to reset them if necessary.
 All foreign keys will be droped, then the propagation script *build\_if\_has\_to\_fks.sql* is launched.
 
 ##### Data purge (data\_purge.sql)
@@ -268,15 +268,15 @@ This script will purge data according to a predefined configuration.
 
 This configuration is defined in a table : common.purge\_tool\_conf and has the following columns:
 
-* table\_name: checks if table exists or not
-* column\_name: checks if column exists or not
-* retentionInterval: a string that has to have the structure : "[number]' '[day/month/year]"
+* table\_name: table(s) that should be purged
+* column\_name: column(s) that should be purged
+* retentionInterval: as the name suggests, retention duiration
 
 The script will first launch scripts to check data in the configuration table:
 
 * *check\_table\_presence.sql*: checks if table exists
 * *check\_column\_presence.sql*: checks if column exists in above table
-* *check\_data\_purge\_retentionInterval.sql*: checks the format of *retentionInterval*.
+* *check\_data\_purge\_retentionInterval.sql*: checks the format of *retentionInterval* is a string corresponding to the structure : "[number]' '[day/month/year]"
 
 Then, it will purge data in the tables and columns listed in the configuration table: for each child schema, it will remove data corresponding to a date earlier than today minus retentionIntervall.
 
@@ -290,9 +290,9 @@ For a given schema, this script will provide with a summary of changes that need
 
 * schema name
 * table name
-* whether an ANALYZE commande has been launched
-* whether a VACUUM commande has been launched
-* a comment that can be one of the followings:
+* whether an ANALYZE commande has been launched or not
+* whether a VACUUM commande has been launched or not
+* a comment that can be one of the followings (defined in French for the time being):
   * VACUUM, ANALYZE, CREATE INDEX CONCURRENTLY, CREATE STATISTICS, ALTER TABLE. L''une de ces étapes est en cours.
   * CREATE INDEX en cours
   * CREATE COLLATION, CREATE TRIGGER, ALTER TABLE. L''une de ces étapes est en cours
@@ -351,16 +351,16 @@ A dump of *master* structure is stored in common.versionning table, which has th
 This logging system intends to follow updates on *master* schema.
 All changes are managed by the above described scripts and procedures and each one includes a call to this script to log related changes or exceptions if any.  
 
-the information is stored with the following details:
+The information is stored with the following details:
 
 * ip sending the log
 * date of execution
 * launched query
 * name of the procedure or script that launched the query
 
-**LIMITATION:** it is not yet possible to store a transcription of the query that launch an event trigger (it would be necessary to create a C script). Thus, only queries launched within procedures and fonctions laucnhed by event triggers are logged.
+**LIMITATION:** it is not yet possible to store a transcription of the query that launch an event trigger (it would be necessary to create a C script). Thus, only queries launched within procedures and fonctions launched by event triggers are logged.
 
-In each function, for each query, it stores the executed query. If the procedure fails, the error description is looged instead, including status 0.
+In each function, for each query, it stores the executed query. If the procedure fails, the error description is logged instead, including status 0.
 
 To see logs, use the following query: `SELECT * FROM common.deblog ORDER BY 2 DESC;`
 
@@ -370,29 +370,29 @@ This control is used in serveral scripts so it has been automated.
 
 ## <a name="Recommandations">Recommandations</a>  
 
-Ti use these tools more efficiently, we strongly recommand you follow thses guidelines:
+To use these tools more efficiently, we strongly recommand you follow theses guidelines:
 
 * Each table created in *master* schema should ave a primary key base on a single integer column. This will allow, between others, to use indexes with RANGE function (even if CLUSTERS based on dates are frequently more efficient for oldest data)
-* If you need to have a foreign key based on another (other) column(s) than the primary key, you should defin a unique index on this (these) column(s).
+* If you need to have a foreign key based on another (other) column(s) than the primary key, you should define a *unique index* (not a unique constraint, that would not be deployed) on this (these) column(s).
 * You could envisage to delete *password* column from *common* table. It could make sens, but take care that maintenance will be much more complex. On top of that, only an administrator is supposed to access to this table.
 
 ### Unit testing
 
-Automated unit tests are provided in *unit_test* schema and it's important to maintain during new release development.
-To launch thses tests, use SQL procedure : *global\_test\_script.sql*
+Automated unit tests are provided in *unit_test* schema and it's important to maintain them during new release development.
+To launch theses tests, use SQL procedure : *global\_test\_script.sql*
 
 ### Limitations
 
-These are some limitations of the different tools, due to technical choices made in the original context; there are some development subjects for future releases.
+There are some limitations of the different tools, due to technical choices made in the original context; there are some development subjects for future releases.
 
 * A unique constraint (by constraint or by index) cannot be inherited. Thus, if a constraint is defined in a table in *master* schema, it will not be automatically propagated. Of course, there are script to perform this, but the created index will be different for each table and it will not be possible, for instance, to ensure a cross-schema unicity.
-* Heritage for CHECK constraints are not taken into account yet
-* Partitionning is not active yet and native paritionning is not possible with PostgreSQL 11 because it is not possible to [create a partition for inherited tables](https://www.postgresql.org/docs/current/ddl-partitioning.html)
+* Inheritance for CHECK constraints are not taken into account yet
+* Partitioning is not active yet and native paritioning is not possible with PostgreSQL 11 because it is not possible to [create a partition for inherited tables](https://www.postgresql.org/docs/current/ddl-partitioning.html)
 * An index **MUST NOT** have 'master' in its name (except of course to describe its schema)
 
 ### Future evolutions
 
-You might want to have users with cross-schema roles, ate least as reader, but it requires to have dedicated queries to access related data: each query will need to know the different schemas for each table to be requested.
+You might want to have users with cross-schema roles, at least as reader, but it requires to have dedicated queries to access related data: each query will need to know the different schemas for each table to be requested.
 A way to do this is to envisage to create some kinds of groups: create a 'group_schema' that inherits from *master*, then child schemas that inherit from this group. But it will any require some additional development effort.
 
-Purge mechanism could also be improved to have different configurations for each child schema, instead of one signle configuration for every schema.
+Purge mechanism could also be improved to have different configurations for each child schema, instead of one single configuration for every schema.
