@@ -160,7 +160,7 @@ BEGIN
 	
 	EXCEPTION
 		WHEN others THEN
-			ROLLBACK;
 			CALL common.deblog(CAST('build_if_has_to_roles' as varchar), CAST(SQLERRM as text), cast(0 as bit));
+			raise '%', chr(10)||'error in ''common.build_if_has_to_roles'' consequently to : '||sqlerrm;
 END;
 $$

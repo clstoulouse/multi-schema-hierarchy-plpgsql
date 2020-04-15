@@ -84,6 +84,6 @@ begin
 	EXCEPTION
 		WHEN others THEN
 			CALL common.deblog(CAST('constraint_naming_control_first' as varchar), CAST(SQLERRM as text), cast(0 as bit));
-			ROLLBACK;
+			raise '%', chr(10)||'error in ''common.constraint_naming_control_first'' consequently to : '||sqlerrm;
 end;
 $$

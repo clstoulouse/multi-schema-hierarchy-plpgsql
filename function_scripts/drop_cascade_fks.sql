@@ -99,6 +99,6 @@ begin
 	EXCEPTION
 		WHEN others THEN
 			CALL common.deblog(CAST('drop_cascade_fks' as varchar), CAST(SQLERRM as text), cast(0 as bit));
-			ROLLBACK;
+			raise '%', chr(10)||'error in ''common.drop_cascade_fks'' consequently to : '||sqlerrm;
 end;
 $$

@@ -63,7 +63,5 @@ begin
 	from cte_query;
 	
 	RETURN res;
-	--RAISE NOTICE ' %', query;
-    --INSERT INTO common.debbug (query_date, query) VALUES (now(), query);
 end;
 $$

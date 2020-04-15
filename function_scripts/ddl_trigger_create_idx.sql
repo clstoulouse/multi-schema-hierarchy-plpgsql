@@ -37,6 +37,11 @@ BEGIN
 		call common.index_naming_control_first();
 		call common.build_if_has_to_idxs();	
 	end if;
+	
+	EXCEPTION
+		WHEN others THEN
+			raise '%', sqlerrm;
+			ROLLBACK;
 END;
 $$;
 

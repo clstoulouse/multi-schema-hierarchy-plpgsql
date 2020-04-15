@@ -60,6 +60,11 @@ BEGIN
 			call common.drop_cascade_pks();
 		end if;
 	end if;
+	
+	EXCEPTION
+		WHEN others THEN
+			raise '%', sqlerrm;
+			ROLLBACK;
 END;
 $$;
 
