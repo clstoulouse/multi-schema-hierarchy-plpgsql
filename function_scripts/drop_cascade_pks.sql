@@ -92,6 +92,6 @@ begin
 	EXCEPTION
 		WHEN others THEN
 			CALL common.deblog(CAST('drop_cascade_pks' as varchar), CAST(SQLERRM as text), cast(0 as bit));
-			ROLLBACK;
+			raise '%', chr(10)||'error in ''common.drop_cascade_pks'' consequently to : '||sqlerrm;
 end;
 $$ language plpgsql;

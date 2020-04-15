@@ -96,8 +96,6 @@ begin
 				and cf.conname like m.conname||'%'
 		);
 		
-	--RAISE NOTICE ' %', query;
-    --INSERT INTO common.debbug (query_date, query) VALUES (now(), query);
 	if query is not null 
 	then 
 		EXECUTE query;
@@ -107,6 +105,6 @@ begin
 	EXCEPTION
 		WHEN others THEN
 			CALL common.deblog(CAST('build_if_has_to_pks' as varchar), CAST(SQLERRM as text), cast(0 as bit));
-			ROLLBACK;
+			raise '%', chr(10)||'error in ''common.build_if_has_to_pks'' consequently to : '||sqlerrm;
 end;
 $$

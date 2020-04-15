@@ -44,7 +44,7 @@ BEGIN
 	
 	EXCEPTION
 		WHEN others THEN
-			ROLLBACK;
 			CALL common.deblog(CAST('drop_client' as varchar), CAST(SQLERRM as text), cast(0 as bit));
+			raise '%', chr(10)||'error in ''common.drop_client'' consequently to : '||sqlerrm;
 END;
 $$;

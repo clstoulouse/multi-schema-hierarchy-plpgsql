@@ -70,8 +70,6 @@ begin
 		into query
 	from cte_final;
 	
-	--RAISE NOTICE ' %', query;
-    --INSERT INTO common.debbug (query_date, query) VALUES (now(), query);
 	if query is not null 
 	then 
 		EXECUTE query;
@@ -81,6 +79,6 @@ begin
 	EXCEPTION
 		WHEN others THEN
 			CALL common.deblog(CAST('index_naming_control_first' as varchar), CAST(SQLERRM as text), cast(0 as bit));
-			ROLLBACK;
+			raise '%', chr(10)||'error in ''common.index_naming_control_first'' consequently to : '||sqlerrm;
 end;
 $$

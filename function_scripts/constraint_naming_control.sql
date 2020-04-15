@@ -71,8 +71,6 @@ begin
 	from cte_query
 	where queriable is not null;
 	
-	--RAISE NOTICE ' %', query;
-    --INSERT INTO common.debbug (query_date, query) VALUES (now(), query);
 	if query is not null 
 	then 
 		EXECUTE query;
@@ -81,7 +79,7 @@ begin
 	
 	EXCEPTION
 		WHEN others THEN
-			ROLLBACK;
 			CALL common.deblog(CAST('constraint_naming_control' as varchar), CAST(SQLERRM as text), cast(0 as bit));
+			raise '%', chr(10)||'error in ''common.constraint_naming_control'' consequently to : '||sqlerrm;
 end;
 $$

@@ -84,7 +84,7 @@ begin
 	
 	EXCEPTION
 		WHEN others THEN
-			ROLLBACK;
 			CALL common.deblog(CAST('delete_indexes_on_cascade' as varchar), CAST(SQLERRM as text), cast(0 as bit));
+			raise '%', chr(10)||'error in ''common.delete_indexes_on_cascade'' consequently to : '||sqlerrm;
 end;
 $$

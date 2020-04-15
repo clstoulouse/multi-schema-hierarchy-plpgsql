@@ -39,6 +39,11 @@ BEGIN
 		RAISE NOTICE 'launch procedures DROP TABLE';
 		call common.build_if_has_to_sqs();
 	end if;
+	
+	EXCEPTION
+		WHEN others THEN
+			raise '%', sqlerrm;
+			ROLLBACK;
 END;
 $$;
 

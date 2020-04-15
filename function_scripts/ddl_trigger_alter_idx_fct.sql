@@ -52,6 +52,11 @@ BEGIN
 			call common.build_if_has_to_idxs();	
 		end if;
 	end if;
+	
+	EXCEPTION
+		WHEN others THEN
+			raise '%', sqlerrm;
+			ROLLBACK;
 END;
 $$;
 

@@ -94,8 +94,6 @@ BEGIN
 				and c.schema_name = cf.schema_name
 		);
 		
-	--RAISE NOTICE ' %', query;
-    --INSERT INTO common.debbug (query_date, query) VALUES (now(), query);
 	IF query IS NOT NULL 
 	THEN 
 		EXECUTE query;
@@ -104,7 +102,7 @@ BEGIN
 	
 	EXCEPTION
 		WHEN others THEN
-			CALL common.deblog(CAST('build_if_has_to_idxs' as varchar), CAST(SQLERRM as text), CAST(0 as bit));
-			ROLLBACK;
+			CALL common.deblog(CAST('build_if_has_to_idxs' as varchar), CAST(SQLERRM as text), cast(0 as bit));
+			raise '%', chr(10)||'error in ''common.build_if_has_to_idxs'' consequently to : '||sqlerrm;
 END;
 $$
