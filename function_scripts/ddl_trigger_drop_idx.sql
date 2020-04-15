@@ -39,6 +39,11 @@ BEGIN
 		RAISE NOTICE 'launch procedures DROP INDEX';
 		call common.delete_indexes_on_cascade();
 	end if;
+	
+	EXCEPTION
+		WHEN others THEN
+			raise '%', sqlerrm;
+			ROLLBACK;
 END;
 $$;
 

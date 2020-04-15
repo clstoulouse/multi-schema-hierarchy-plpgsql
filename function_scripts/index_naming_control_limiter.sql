@@ -44,9 +44,11 @@ begin
 			and (substring(idx_name, 1, 5) <> 'idxu_' or char_length(idx_name) <> 10 or common.isnumeric(substring(idx_name, 6, 10)) is false)
 		);
 	
-	--RAISE NOTICE ' %', query;
-    --INSERT INTO common.debbug (query_date, query) VALUES (now(), query);
-	
 	RETURN res;
+	
+	EXCEPTION
+		WHEN others THEN
+			CALL common.deblog(CAST('index_naming_control_limiter' as varchar), CAST(SQLERRM as text), cast(0 as bit));
+			raise '%', chr(10)||'error in ''common.index_naming_control_limiter'' consequently to : '||sqlerrm;
 end;
 $$

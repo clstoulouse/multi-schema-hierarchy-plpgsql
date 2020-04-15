@@ -76,8 +76,12 @@ begin
 	select 
 		string_agg(
 		'ALTER TABLE '||c.schema_name||'.'||m.table_name||'
-		ADD CONSTRAINT '||m.conname||'_'||LPAD(c.client_id::text, 5, '0')||' '||replace(m.con_def, 'master', c.schema_name)||';'
-		||chr(10)||		
+		ADD CONSTRAINT '||m.conname||'_'||LPAD(c.client_id::text, 5, '0')||' '||
+			case when position('REFERENCES master.' in m.con_def) > 0 
+				then replace (m.con_def, 'master', c.schema_name)
+				else replace(m.con_def, 'REFERENCES ', 'REFERENCES ' || c.schema_name || '.')
+			end
+		||';'||chr(10)||		
 		'COMMENT ON CONSTRAINT '||conname||'_'||LPAD(c.client_id::text, 5, '0')||' ON '||c.schema_name||'.'||table_name||' IS '''||
 			'Contrainte de type PRIMARY KEY sur la table '||c.schema_name||'.'||m.table_name
 			||''';', chr(13)) into query
@@ -92,8 +96,6 @@ begin
 				and cf.conname like m.conname||'%'
 		);
 		
-	--RAISE NOTICE ' %', query;
-    --INSERT INTO common.debbug (query_date, query) VALUES (now(), query);
 	if query is not null 
 	then 
 		EXECUTE query;
@@ -103,6 +105,6 @@ begin
 	EXCEPTION
 		WHEN others THEN
 			CALL common.deblog(CAST('build_if_has_to_pks' as varchar), CAST(SQLERRM as text), cast(0 as bit));
-			ROLLBACK;
+			raise '%', chr(10)||'error in ''common.build_if_has_to_pks'' consequently to : '||sqlerrm;
 end;
 $$

@@ -175,8 +175,7 @@ begin
 			where c2.schema_name = c.schema_name
 				and r.grantee like 'writer_%'
 		);
-	--RAISE NOTICE ' %', query;
-    --INSERT INTO common.debbug (query_date, query) VALUES (now(), query);
+		
 	if query is not null 
 	then 
 		EXECUTE query;
@@ -186,6 +185,6 @@ begin
 	EXCEPTION
 		WHEN others THEN
 			CALL common.deblog(CAST('build_if_has_to_sqs' as varchar), CAST(SQLERRM as text), cast(0 as bit));
-			ROLLBACK;
+			raise '%', chr(10)||'error in ''common.build_if_has_to_sqs'' consequently to : '||sqlerrm;
 end;
 $$

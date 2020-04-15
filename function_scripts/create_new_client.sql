@@ -127,9 +127,10 @@ BEGIN
 	
 	CALL common.deblog(CAST('create_new_client' as varchar), CAST(query as text), cast(1 as bit));
 	
+	
 	EXCEPTION
 		WHEN others THEN
-			ROLLBACK;
 			CALL common.deblog(CAST('create_new_client' as varchar), CAST(SQLERRM as text), cast(0 as bit));
+			raise '%', chr(10)||'error in ''common.create_new_client'' consequently to : '||sqlerrm;
 END;
 $$

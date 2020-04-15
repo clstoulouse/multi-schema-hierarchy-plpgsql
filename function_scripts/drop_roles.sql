@@ -49,6 +49,7 @@ BEGIN
 		WHEN sqlstate '2BP01' THEN
 			CALL common.deblog(CAST('drop_client' as varchar), 'KnownError : '||CAST(SQLERRM as text), cast(0 as bit));
 		WHEN others THEN
-			RAISE EXCEPTION 'Unknown role drop failure';
+			CALL common.deblog(CAST('drop_roles' as varchar), CAST(SQLERRM as text), cast(0 as bit));
+			raise '%', chr(10)||'error in ''common.drop_roles'' consequently to : '||sqlerrm;
 END;
 $$;

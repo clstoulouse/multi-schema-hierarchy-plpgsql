@@ -47,6 +47,11 @@ BEGIN
 		call common.build_if_has_to_pks();
 		call common.build_if_has_to_fks();
 	end if;
+	
+	EXCEPTION
+		WHEN others THEN
+			raise '%', sqlerrm;
+			ROLLBACK;
 END;
 $$;
 

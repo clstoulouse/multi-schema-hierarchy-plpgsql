@@ -43,8 +43,12 @@ begin
 	if query is not null 
 	then 
 		EXECUTE query;
-		CALL common.deblog(CAST('build_if_has_to_fks' as varchar), CAST(query as text), cast(1 as bit));
+		CALL common.deblog(CAST('reset_fks' as varchar), CAST(query as text), cast(1 as bit));
 	end if;
-
+	
+	EXCEPTION
+		WHEN others THEN
+			CALL common.deblog(CAST('reset_fks' as varchar), CAST(SQLERRM as text), cast(0 as bit));
+			raise '%', chr(10)||'error in ''common.reset_fks'' consequently to : '||sqlerrm;
 END;
 $$;
